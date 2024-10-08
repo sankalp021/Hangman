@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guess the Word!</title>
+    <!-- Import SweetAlert2 for better pop-up messages -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #f1c40f;
+            text-transform: uppercase;
+            text-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Hangman Container */
+        .hangman-container {
+            position: relative;
+            width: 150px;
+            height: 220px;
+            margin-bottom: 30px;
+        }
+
+        /* Hangman parts */
+        .hangman-part {
+            display: none;
+            position: absolute;
+            background-color: #f1c40f;
+            transition: opacity 0.6s ease-in-out;
+        }
+
+        .visible {
+            display: block;
+        }
+
+        /* Hangman components */
+        .gallows {
+            width: 10px;
+            height: 210px;
+            left: 50px;
+            bottom: 0;
+        }
+
+        .top-bar {
+            width: 80px;
+            height: 10px;
+            left: 50px;
+            top: 0;
+        }
+
+        .rope {
+            width: 5px;
+            height: 30px;
+            left: 120px;
+            top: 10px;
+        }
+
+        .head {
+            width: 40px;
+            height: 40px;
+            left: 100px;
+            top: 40px;
+            border-radius: 50%;
+            background-color: #e74c3c;
+        }
+
+        .body {
+            width: 10px;
+            height: 60px;
+            left: 115px;
+            top: 80px;
+        }
+
+        .arm-left {
+            width: 50px;
+            height: 5px;
+            left: 65px;
+            top: 100px;
+            transform-origin: right;
+            transform: rotate(-40deg);
+        }
+
+        .arm-right {
+            width: 50px;
+            height: 5px;
+            left: 115px;
+            top: 100px;
+            transform-origin: left;
+            transform: rotate(40deg);
+        }
+
+        .leg-left {
+            width: 50px;
+            height: 5px;
+            left: 65px;
+            top: 140px;
+            transform-origin: right;
+            transform: rotate(-45deg);
+        }
+
+        .leg-right {
+            width: 50px;
+            height: 5px;
+            left: 115px;
+            top: 140px;
+            transform-origin: left;
+            transform: rotate(45deg);
+        }
+
+        /* Style for the word letter boxes */
+        .letter-box {
+            display: inline-block;
+            width: 50px;
+            height: 60px;
+            border: 2px solid #f39c12;
+            text-align: center;
+            line-height: 60px;
+            font-size: 30px;
+            margin: 5px;
+            background-color: #2c3e50;
+            color: #f39c12;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            border-radius: 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .letter-box.filled {
+            background-color: #16a085;
+            color: #ecf0f1;
+        }
+
+        /* Style for the keyboard */
+        .keyboard {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .key {
+            display: inline-block;
+            width: 50px;
+            height: 60px;
+            margin: 5px;
+            border: 1px solid #2c3e50;
+            text-align: center;
+            line-height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            background-color: #1c1c1c;
+            color: #fff;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .key:hover {
+            background-color: #2d2d2d;
+            transform: translateY(-3px);
+        }
+
+        .crossed {
+            background-color: #e74c3c;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        /* Responsive Layout adjustments */
+        @media (max-width: 768px) {
+            .key, .letter-box {
+                width: 40px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Guess the Word!</h1>
+
+    <!-- Hangman visual representation -->
+    <div class="hangman-container">
+        <div class="hangman-part gallows visible"></div>
+        <div class="hangman-part top-bar visible"></div>
+        <div class="hangman-part rope visible"></div>
+        <div class="hangman-part head"></div>
+        <div class="hangman-part body"></div>
+        <div class="hangman-part arm-left"></div>
+        <div class="hangman-part arm-right"></div>
+        <div class="hangman-part leg-left"></div>
+        <div class="hangman-part leg-right"></div>
+    </div>
+
+    <!-- Display letter boxes -->
+    <div id="word-container"></div>
+
+    <!-- Display keyboard with three lines -->
+    <div class="keyboard" id="keyboard">
+        <div class="keyboard-row" id="row-1"></div>
+        <div class="keyboard-row" id="row-2"></div>
+        <div class="keyboard-row" id="row-3"></div>
+    </div>
+
+    <script>
+        var word = "{{ word|escapejs }}";  // Word passed from backend
+        var incorrectGuesses = 0;  // To track the number of incorrect guesses
+        
+        //This is to calculate the max number of incorrect guesses based on word length
+        const wordLength = word.length;
+        const maxGuesses = (wordLength % 2 === 0) ? wordLength / 2 : Math.ceil((wordLength + 1) / 2);
+
+        const hangmanParts = [
+            '.head', 
+            '.body', 
+            '.arm-left', 
+            '.arm-right', 
+            '.leg-left', 
+            '.leg-right'
+        ];
+
+        // Creating letter boxes based on the word's length
+        function createLetterBoxes() {
+            const wordContainer = document.getElementById('word-container');
+            wordContainer.innerHTML = '';  // Clearing the container
+            for (let i = 0; i < word.length; i++) {
+                const letterBox = document.createElement('div');
+                letterBox.classList.add('letter-box');
+                letterBox.id = `letter-${i}`;
+                wordContainer.appendChild(letterBox);
+            }
+        }
+
+        // Creating a virtual keyboard with A-Z letters and split into 3 lines
+        function createKeyboard() {
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            const row1 = 'QWERTYUIOP';
+            const row2 = 'ASDFGHJKL';
+            const row3 = 'ZXCVBNM';
+            
+            const keyboardRows = {
+                'row-1': row1.split(''),
+                'row-2': row2.split(''),
+                'row-3': row3.split('')
+            };
+
+            for (const [rowId, letters] of Object.entries(keyboardRows)) {
+                const keyboardRow = document.getElementById(rowId);
+                for (let i = 0; i < letters.length; i++) {
+                    const key = document.createElement('div');
+                    key.classList.add('key');
+                    key.innerText = letters[i];
+                    key.id = `key-${letters[i]}`;
+                    key.onclick = function() { handleKeyClick(letters[i]) };
+                    keyboardRow.appendChild(key);
+                }
+            }
+        }
+
+        // Handling the key press and check if it exists in the word
+        function handleKeyClick(letter) {
+            const upperWord = word.toUpperCase();  // Converts word to uppercase
+            let found = false;
+
+            // Checking if the clicked letter exists in the word
+            for (let i = 0; i < upperWord.length; i++) {
+                if (upperWord[i] === letter) {
+                    found = true;
+                    document.getElementById(`letter-${i}`).innerText = letter;  // Fill the correct box
+                    document.getElementById(`letter-${i}`).classList.add('filled');  // Add filled class for styling
+                }
+            }
+
+            // If letter is not found in the word, marking the key as crossed and updating the hangman
+            if (!found) {
+                const keyElement = document.getElementById(`key-${letter}`);
+                keyElement.classList.add('crossed');
+                keyElement.onclick = null;  // Disable further clicks on that key
+                incorrectGuesses++;  // Increment incorrect guess counter
+
+                // Update the hangman drawing
+                updateHangman(incorrectGuesses,maxGuesses);
+            }
+
+            // Check if the player has won or lost
+            checkGameStatus();
+        }
+
+        // Update the hangman drawing based on the number of incorrect guesses
+
+        let hangmanState = [0, 0, 0, 0, 0, 0];
+        // const hangmanParts = ['head', 'body', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+        const totalParts = hangmanParts.length;
+
+        function updateHangman(stage, maxGuesses) {
+    let partsPerStage = Math.floor(totalParts / maxGuesses);  // Minimum parts to reveal per stage
+    let extraParts = totalParts % maxGuesses;  // Handle leftover parts
+
+    // Calculate how many parts to show in this stage
+    let partsToShow = partsPerStage;  // Start with the base number of parts
+    if (stage <= extraParts) {
+        partsToShow += 1;  // Distribute the extra parts in the early stages
+    }
+
+    // Calculate the start and end indices for parts to be revealed in this stage
+    let alreadyRevealed = hangmanState.filter(x => x === -1).length;  // Count how many parts have been shown already
+    let startIndex = alreadyRevealed;  // Start revealing from the next part
+    let endIndex = startIndex + partsToShow;  // Reveal partsToShow parts in this stage
+
+    for (let i = startIndex; i < endIndex && i < totalParts; i++) {
+        const partSelector = hangmanParts[i];  // Get the part selector
+        document.querySelector(partSelector).classList.add('visible');  // Add 'visible' class to reveal the part
+        hangmanState[i] = -1;  // Mark this part as revealed
+    }
+}
+
+        // Check if all the boxes are filled (WIN) or if the maximum guesses are reached (LOSE)
+        function checkGameStatus() {
+            // Check if all the boxes are filled (you win)
+            let allFilled = true;
+            for (let i = 0; i < word.length; i++) {
+                const letterBox = document.getElementById(`letter-${i}`);
+                if (letterBox.innerText === '') {
+                    allFilled = false;
+                    break;
+                }
+            }
+            if (allFilled) {
+                setTimeout(function() {
+                    Swal.fire({
+                        title: 'Congratulations!',
+                        text: 'You won the game!',
+                        icon: 'success',
+                        confirmButtonText: 'Play Again'
+                    }).then(() => {
+                        window.location.reload();  // Reload the page for a new game
+                    });
+                }, 100);  // Delay to ensure the last letter is displayed
+                return;
+            }
+
+            // If too many incorrect guesses (you lose)
+            if (incorrectGuesses >= maxGuesses) {
+                setTimeout(function() {
+                    Swal.fire({
+                        title: 'Game Over!',
+                        text: 'You lost the game!',
+                        icon: 'error',
+                        confirmButtonText: 'Try Again'
+                    }).then(() => {
+                        window.location.reload();  // Reload the page for a new game
+                    });
+                }, 100);  // Delay to ensure the last action is processed
+                return;
+            }
+        }
+
+        // Initializing the game by creating letter boxes and keyboard
+        createLetterBoxes();
+        createKeyboard();
+    </script>
+</body>
+</html>
